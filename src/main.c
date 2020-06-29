@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <insns.h>
 
 // GENERAL TODOS
 // TODO: add implicit .text default
@@ -89,6 +90,8 @@ void readFile(char* filename) {
     
 }
 
+
 int main(int argc, char** argv) {
-   readFile(argv[1]); 
+   printf("%s", instrux[64]);
+   //readFile(argv[1]); 
 }
