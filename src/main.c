@@ -90,8 +90,23 @@ void readFile(char* filename) {
     
 }
 
+int numFound;
+
+void strToEnum(char* name) {
+    size_t enumSize = 1976; // TODO: fix
+    for (int i=0; i<enumSize; i++) {
+        if (strcmp(nasm_insn_names[i], name) == 0) {
+            numFound++;
+            return;
+        }
+    }
+}
 
 int main(int argc, char** argv) {
-   printf("%s", instrux[64]);
-   //readFile(argv[1]); 
+   for (int i=0; i<25000; i++) {
+       strToEnum("wrssd");
+       strToEnum("encls");
+       strToEnum("wrssq");
+   }
+   printf("numfound: %d\n", numFound);
 }
