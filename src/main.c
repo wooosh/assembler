@@ -3,11 +3,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <regs.h>
 // GENERAL TODOS
 // TODO: add implicit .text default
 
 // TODO: memory addressing
 // TODO: add all operand types
+typedef struct reg {
+  int val;
+  enum reg_enum reg;
+} reg;
+
 typedef union operand {
   int constant;
   char *reg;
@@ -88,8 +94,8 @@ void readFile(char *filename) {
 
 int numFound;
 
-void strToEnum(char *name) {
-  size_t enumSize = 1976; // TODO: fix
+void get_instruction_enum(char *name) {
+  size_t enumSize = 1976; // TODO: remove magic number
   for (int i = 0; i < enumSize; i++) {
     if (strcmp(nasm_insn_names[i], name) == 0) {
       numFound++;
@@ -98,11 +104,22 @@ void strToEnum(char *name) {
   }
 }
 
+void get_register(char* name) {
+  for (size_t i = 0; i<EXPR_REG_END; i++) {
+    if (strcmp(nasm_reg_names[i], name) == 0) {
+      numFound++;
+      return;
+    }
+  }
+}
+
 int main(int argc, char **argv) {
   for (int i = 0; i < 25000; i++) {
-    strToEnum("wrssd");
-    strToEnum("encls");
-    strToEnum("wrssq");
+    get_instruction_enum("wrssd");
+    get_instruction_enum("encls");
+    get_instruction_enum("wrssq");
+    get_register("rax");
+    
   }
   printf("numfound: %d\n", numFound);
 }
