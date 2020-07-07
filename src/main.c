@@ -9,10 +9,7 @@
 
 // TODO: memory addressing
 // TODO: add all operand types
-typedef struct reg {
-  int val;
-  enum reg_enum reg;
-} reg;
+// TODO: change everything to strok_r, because this will eventually be a library
 
 typedef union operand {
   int constant;
@@ -37,6 +34,19 @@ struct AST {
   section *sections;
 };
 
+// Trims whitespace on both ends of string
+char *trimWhitespace(char *str) {
+  while (str[0] != '\0' && str[0] == ' ')
+    str++;
+  for (int i = 0; i < strlen(str); i++) {
+    if (str[i] == ' ') {
+      str[i] = '\0';
+      return str;
+    }
+  }
+  return str;
+}
+
 void readFile(char *filename) {
   FILE *fptr;
 
@@ -51,9 +61,15 @@ void readFile(char *filename) {
   size_t bufSize;
 
   size_t currentSection = -1; // Index into AST
+  size_t nread;
 
-  while (getline(&buf, &bufSize, fptr) != -1) {
-    // TODO: comments
+  while ((nread = getline(&buf, &bufSize, fptr)) != EOF) {
+    // Remove trailing newline (if applicable)
+    if (buf[nread - 1] == '\n') {
+      buf[nread - 1] = 0;
+    }
+    printf("\nread line: '%s'\n", buf);
+
     // Read section
     if (strncmp(buf, "section", strlen("section")) == 0) {
       // TODO: check if section name already exists
@@ -68,25 +84,36 @@ void readFile(char *filename) {
 
       // TODO: eat whitespace properly
       char *name = buf + strlen("section ");
-      // Remove trailing newline if applicable
-      size_t nameLen = strlen(name);
-      if (name[nameLen - 1] == '\n') {
-        name[nameLen - 1] = 0;
-        nameLen--;
-      }
 
       // Copy name from getline buffer to section struct
-      ast.sections[currentSection].name = malloc(nameLen);
+      ast.sections[currentSection].name = malloc(strlen(name));
       strcpy(ast.sections[currentSection].name, name);
 
     } else { // Read instruction
-      printf("non-section: %s\n", buf);
-      // TODO: everything
+      // Remove any characters after ';' (comment start character)
+      if (buf[0] == ';')
+        continue;
+      // We use a new variable called line, because we cannot modify buf because
+      // it is dynamically allocated
+      char *line = strtok(buf, ";");
+      printf("comment removal: '%s'\n", buf);
+
+      // TODO: eat whitespace before reading instruction name
+
+      // Read instruction name
+      char *inst = strtok(line, " ");
+      if (inst == NULL)
+        continue; // No instruction was found, continue
+      printf("instruction: '%s'\n", inst);
+
+      char *arg;
+      while ((arg = strtok(NULL, ",")) != NULL)
+        printf("arg: '%s'\n", trimWhitespace(arg));
     }
   }
 
   // Print the data to make sure it was read correctly
-  printf("num sections %d\n", ast.sectionsLen);
+  printf("\nnum sections %d\n", ast.sectionsLen);
   for (int i = 0; i < ast.sectionsLen; i++) {
     printf("name: %s\n", ast.sections[i].name);
   }
@@ -104,22 +131,12 @@ void get_instruction_enum(char *name) {
   }
 }
 
-void get_register(char* name) {
-  for (size_t i = 0; i<EXPR_REG_END; i++) {
+enum reg_enum get_reg(char *name) {
+  for (size_t i = 0; i < EXPR_REG_END; i++) {
     if (strcmp(nasm_reg_names[i], name) == 0) {
-      numFound++;
-      return;
+      return i;
     }
   }
 }
 
-int main(int argc, char **argv) {
-  for (int i = 0; i < 25000; i++) {
-    get_instruction_enum("wrssd");
-    get_instruction_enum("encls");
-    get_instruction_enum("wrssq");
-    get_register("rax");
-    
-  }
-  printf("numfound: %d\n", numFound);
-}
+int main(int argc, char **argv) { readFile(argv[1]); }
