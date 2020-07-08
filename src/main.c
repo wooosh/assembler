@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <insns.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,15 @@ char *trimWhitespace(char *str) {
     }
   }
   return str;
+}
+
+enum reg_enum get_reg(char *name) {
+  for (size_t i = 0; i < EXPR_REG_END; i++) {
+    if (strcmp(nasm_reg_names[i], name) == 0) {
+      return i;
+    }
+  }
+  return R_none;
 }
 
 void readFile(char *filename) {
@@ -99,7 +109,6 @@ void readFile(char *filename) {
       printf("comment removal: '%s'\n", buf);
 
       // TODO: eat whitespace before reading instruction name
-
       // Read instruction name
       char *inst = strtok(line, " ");
       if (inst == NULL)
@@ -107,8 +116,30 @@ void readFile(char *filename) {
       printf("instruction: '%s'\n", inst);
 
       char *arg;
-      while ((arg = strtok(NULL, ",")) != NULL)
-        printf("arg: '%s'\n", trimWhitespace(arg));
+      while ((arg = strtok(NULL, ",")) != NULL) {
+        arg = trimWhitespace(arg);
+
+        // detect if number
+        char *num = arg;
+        if (num[0] == '-')
+          num++;
+        while (isdigit(num[0]) && num[0] != '\0')
+          num++;
+        if (num[0] == '\0') {
+          printf("number: '%s'\n", arg);
+          continue;
+        }
+
+        // detect if register
+        enum reg_enum reg = get_reg(arg);
+        if (reg != R_none) {
+          printf("register: '%s'\n", arg);
+          continue;
+        }
+
+        // default case
+        printf("unknown argument: '%s'\n", arg);
+      }
     }
   }
 
@@ -127,14 +158,6 @@ void get_instruction_enum(char *name) {
     if (strcmp(nasm_insn_names[i], name) == 0) {
       numFound++;
       return;
-    }
-  }
-}
-
-enum reg_enum get_reg(char *name) {
-  for (size_t i = 0; i < EXPR_REG_END; i++) {
-    if (strcmp(nasm_reg_names[i], name) == 0) {
-      return i;
     }
   }
 }
