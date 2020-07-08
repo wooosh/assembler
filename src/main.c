@@ -11,16 +11,20 @@
 // TODO: memory addressing
 // TODO: add all operand types
 // TODO: change everything to strok_r, because this will eventually be a library
+enum operand_type { O_reg, O_immediate };
 
-typedef union operand {
-  int constant;
-  char *reg;
+typedef struct operand {
+  enum operand_type otype;
+  union {
+    enum reg_enum reg;
+    int immediate;
+  } value;
 } operand;
 
 typedef struct instruction {
-  char *name;
+  enum opcode opcode;
   size_t numOperands;
-  operand *operands;
+  operand operands[MAX_OPERANDS];
 } instruction;
 
 typedef struct section {
@@ -55,6 +59,16 @@ enum reg_enum get_reg(char *name) {
     }
   }
   return R_none;
+}
+
+enum opcode get_instruction(char *name) {
+  size_t enumSize = 1976; // TODO: remove magic number
+  for (int i = 0; i < enumSize; i++) {
+    if (strcmp(nasm_insn_names[i], name) == 0) {
+      return i;
+    }
+  }
+  return I_none;
 }
 
 void readFile(char *filename) {
@@ -103,36 +117,52 @@ void readFile(char *filename) {
       // Remove any characters after ';' (comment start character)
       if (buf[0] == ';')
         continue;
-      // We use a new variable called line, because we cannot modify buf because
-      // it is dynamically allocated
+      // We stop using buf, because it is dynamically allocated and we don't
+      // want to change the start address
       char *line = strtok(buf, ";");
       printf("comment removal: '%s'\n", buf);
 
-      // TODO: eat whitespace before reading instruction name
-      // Read instruction name
-      char *inst = strtok(line, " ");
-      if (inst == NULL)
-        continue; // No instruction was found, continue
-      printf("instruction: '%s'\n", inst);
+      instruction inst;
+      inst.numOperands = 0;
 
+      // Read instruction name
+      char *name = strtok(line, " ");
+      if (name == NULL)
+        continue; // No instruction was found, continue
+
+      inst.opcode = get_instruction(name);
+      if (inst.opcode == I_none) {
+        printf("unknown instruction: '%s'\n", name);
+        continue;
+      }
+
+      printf("instruction: '%s'\n", name);
+
+      // Read in arguments
       char *arg;
       while ((arg = strtok(NULL, ",")) != NULL) {
         arg = trimWhitespace(arg);
 
         // detect if number
-        char *num = arg;
-        if (num[0] == '-')
-          num++;
-        while (isdigit(num[0]) && num[0] != '\0')
-          num++;
-        if (num[0] == '\0') {
-          printf("number: '%s'\n", arg);
+        size_t i = 0;
+        if (arg[0] == '-')
+          i++;
+        while (isdigit(arg[i]) && arg[i] != '\0')
+          i++;
+        if (arg[i] == '\0') {
+          inst.operands[inst.numOperands].otype = O_immediate;
+          inst.operands[inst.numOperands].value.immediate = atoi(arg);
+          printf("number: '%d'\n", inst.operands[inst.numOperands].value);
+          inst.numOperands++;
           continue;
         }
 
         // detect if register
         enum reg_enum reg = get_reg(arg);
         if (reg != R_none) {
+          inst.operands[inst.numOperands].otype = O_reg;
+          inst.operands[inst.numOperands].value.reg = reg;
+          inst.numOperands++;
           printf("register: '%s'\n", arg);
           continue;
         }
@@ -147,18 +177,6 @@ void readFile(char *filename) {
   printf("\nnum sections %d\n", ast.sectionsLen);
   for (int i = 0; i < ast.sectionsLen; i++) {
     printf("name: %s\n", ast.sections[i].name);
-  }
-}
-
-int numFound;
-
-void get_instruction_enum(char *name) {
-  size_t enumSize = 1976; // TODO: remove magic number
-  for (int i = 0; i < enumSize; i++) {
-    if (strcmp(nasm_insn_names[i], name) == 0) {
-      numFound++;
-      return;
-    }
   }
 }
 
