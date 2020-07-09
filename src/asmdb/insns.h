@@ -13,6 +13,7 @@ struct itemplate {
 };
 
 extern const struct itemplate instrux[];
+extern const struct itemplate * const nasm_instructions[];
 
 /* Disassembler table structure */
 
